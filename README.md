@@ -6,5 +6,5 @@ The data provided in the /data folder contains the csv files delivered from the 
 
 ## Running the Software
 * Download the notebook (.ipynb) files and upload them into the aws server.
-* Run trc4200.ipynb
+* Run trc4200-dataExtraction.ipynb
 
