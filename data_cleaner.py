@@ -14,13 +14,17 @@ def create_temp_df(fcu_sth_raw, fcu_nth_raw, ahu_raw):
     # Sth is in 5 min increments so merged table is in 5 mins
     df_ltb_temps = pd.merge(fcu_sth_raw, fcu_nth_raw, on='Timestamp')
     df_ltb_temps = pd.merge(df_ltb_temps, ahu_raw, on='Timestamp')
-    del df_ltb_temps['hour']
 
     # Clean column titles
     df_ltb_temps.columns = [
-        col.replace(' Extended Trend Log', '').replace(' - Trend - Extd', '').replace('-00', '')
+        col.replace(' Extended Trend Log', '')
+           .replace(' - Trend - Extd', '')
+           .replace('-00', '')
+           .replace('OaTmp_x', 'OaTmp')
+           .replace('OaRH_x', 'OaRG')
         for col in df_ltb_temps.columns
     ]
+    df_ltb_temps.drop(['hour', 'OaRH_y', 'OaTmp_y'], axis=1, inplace=True)  # OaRh_y & OaTmp_y are duplicates
 
     # Limit range
     date_mask = (df_ltb_temps['Timestamp'] >= START_DATE) & (df_ltb_temps['Timestamp'] <= END_DATE)
@@ -46,8 +50,10 @@ def create_chiller_boiler_power_df(chiller_boiler_raw):
 
     # Clean column titles
     chiller_boiler_raw.columns = [
-        col.replace(' - Extended Trend Log', '').replace(' - Ext', '')
-            .replace(' Extended Trend Log', '').replace(' Trend Log', '')
+        col.replace(' - Extended Trend Log', '')
+           .replace(' - Ext', '')
+           .replace(' Extended Trend Log', '')
+           .replace(' Trend Log', '')
         for col in chiller_boiler_raw.columns
     ]
 
