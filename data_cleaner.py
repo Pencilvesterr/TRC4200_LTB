@@ -67,6 +67,10 @@ def get_power_used(df_chiller_boiler_power, start_date=None, end_date=None) -> t
         date_mask = (df_chiller_boiler_power['Timestamp'] >= start_date) & (df_chiller_boiler_power['Timestamp'] < end_date)
         df_chiller_boiler_power = df_chiller_boiler_power.loc[date_mask]
 
+    # Clear values of erroneous row
+    df_chiller_boiler_power.loc[df_chiller_boiler_power['Timestamp'] == '28/02/2020  1:00:00',
+                                df_chiller_boiler_power.columns] = 0
+
     totals = {}  # Leaving this here incase raw values need to be inspected
     boiler = chiller = 0
     for column in df_chiller_boiler_power:
