@@ -21,7 +21,7 @@ def create_temp_df(fcu_sth_raw, fcu_nth_raw, ahu_raw):
            .replace(' - Trend - Extd', '')
            .replace('-00', '')
            .replace('OaTmp_x', 'OaTmp')
-           .replace('OaRH_x', 'OaRG')
+           .replace('OaRH_x', 'OaRH')
         for col in df_ltb_temps.columns
     ]
     df_ltb_temps.drop(['hour', 'OaRH_y', 'OaTmp_y'], axis=1, inplace=True)  # OaRh_y & OaTmp_y are duplicates
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     room_info_raw = pd.read_csv('data/Room Details.csv')
     df_chiller_boiler_raw = pd.read_csv('data/more_Data/chillers boilers thermal Feb 23032020.csv')
 
-    df_chiller_boiler_power = create_chiller_boiler_power_df(df_chiller_boiler_raw)
+    #df_chiller_boiler_power = create_chiller_boiler_power_df(df_chiller_boiler_raw)
     # df_rooms_info = create_room_info_df(room_info_raw)
     #df_ltb_temps = create_temp_df(df_fcu_sth_raw, df_fcu_nth_raw, df_ahu_raw)
 
