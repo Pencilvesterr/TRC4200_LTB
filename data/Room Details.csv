@@ -1,4 +1,4 @@
-Room Name,AHU / FCU,Total Area (m^2),External Wall Length (m)
+Room Name,AHU / FCU,Total Area,External Wall Length
 G31,AHU-01,544.71,57.75
 G01 ,FCU-21,97.48,15.95
 G02,FCU-22,88.27,8.25
