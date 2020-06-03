@@ -89,6 +89,10 @@ def get_power_used(df_chiller_boiler_power, start_date=None, end_date=None) -> t
             elif column.startswith('LTB  BLR'):
                 boiler += column_sum
 
+    # kWh to kJ
+    boiler = boiler * 3600
+    chiller = chiller * 3600
+
     # Limit sig figs
     boiler = round(boiler, 2)
     chiller = round(chiller, 2)
