@@ -1,8 +1,9 @@
 import pandas as pd
 
-CEIL_HEIGHT = 3.3
-COEFF_AIR = 1.0035
-RHO = 1275
+CEIL_HEIGHT = 3.3  # m
+COEFF_AIR = 1.012  # J/(g⋅K)
+RHO = 1225  # g/m3
+U_GLASS = 2.7  # W/m²K
 ahu_lookup = {
         'AHU-01': 'AHU-01 Internal ZnTmp_1',
         'AHU-B1-01': 'AHU-B1-01 ZnTmp_1',
@@ -20,7 +21,11 @@ def energyLossAllRooms(df_ltb_temps, df_room_info, freq=15, time_frame=["06:00",
     for _, current_room_row in df_room_info.iterrows():
         energy_loss = _energyLossRoom(current_room_row, df_ltb_temps_sampled)
         energy_loss_dict[current_room_row['Room Name']] = energy_loss
-    return pd.DataFrame(data=energy_loss_dict)
+
+    df = pd.DataFrame(data=energy_loss_dict)
+    df_energy_change = df.reindex(sorted(df.columns), axis=1)  # Sort columns alphabetically
+
+    return df_energy_change
 
 
 # @param room_dimen_list a panda dataframe object frame.
@@ -32,9 +37,8 @@ def energyLossAllRooms(df_ltb_temps, df_room_info, freq=15, time_frame=["06:00",
 # Output is in kiloJoules.
 # Assumptions: wall height is approx. one storey which is 3.3m
 def _energyLossRoom(room_row, df_ltb_temps):
-    room_height = CEIL_HEIGHT
     room_area = room_row['Total Area']
-    room_volume = room_area * room_height
+    room_volume = room_area * CEIL_HEIGHT
     current_room_unit = room_row['AHU / FCU']
     temp_list = _getTempRoom(current_room_unit, df_ltb_temps)
     return (temp_list) * COEFF_AIR * RHO * room_volume / 1000
@@ -65,13 +69,13 @@ def energy_to_building(df_ltb_temps, df_room_info, time_frame=["06:00", "18:00"]
         df_room = _energy_to_room(df_ltb_temps_sampled, df_room_info, AC_unit, freq)
         df_energy_received = df_energy_received.join(df_room)
     
-    df_energy_received = df_energy_received.between_time(time_frame[0], time_frame[1])
+    df = df_energy_received.between_time(time_frame[0], time_frame[1])
+    df_energy_received = df.reindex(sorted(df.columns), axis=1)  # Sort columns alphabetically
 
     return df_energy_received
     
         
 def _energy_to_room(df_ltb_temps, df_room_info, AC_unit, freq=15):
-    U_GLASS = 2.7  # W/m²K
     external_wall = float(df_room_info.loc[df_room_info['AHU / FCU'] == AC_unit]['External Wall Length'])
     room_name = str(df_room_info.loc[df_room_info['AHU / FCU'] == AC_unit]['Room Name'].iloc[0])
     
