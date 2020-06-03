@@ -4,7 +4,7 @@ START_DATE = '2020-02-02 01:10:0'  # Nth data set starts Feb 2nd 1:10:00, so lim
 END_DATE = '2020-02-29 23:59:59'
 
 
-def create_temp_df(fcu_sth_raw, fcu_nth_raw, ahu_raw, freq=15):
+def create_temp_df(fcu_sth_raw, fcu_nth_raw, ahu_raw, start_date=START_DATE, end_date=END_DATE, freq=15):
     """ Create a cleaned data frame for all raw temperature related data."""
     fcu_sth_raw['Timestamp'] = pd.to_datetime(fcu_sth_raw['Timestamp'], dayfirst=True)
     fcu_nth_raw['Timestamp'] = pd.to_datetime(fcu_nth_raw['Timestamp'], dayfirst=True)
@@ -27,7 +27,7 @@ def create_temp_df(fcu_sth_raw, fcu_nth_raw, ahu_raw, freq=15):
     df_ltb_temps.drop(['hour', 'OaRH_y', 'OaTmp_y'], axis=1, inplace=True)  # OaRh_y & OaTmp_y are duplicates
 
     # Limit range
-    date_mask = (df_ltb_temps['Timestamp'] >= START_DATE) & (df_ltb_temps['Timestamp'] <= END_DATE)
+    date_mask = (df_ltb_temps['Timestamp'] >= start_date) & (df_ltb_temps['Timestamp'] <= end_date)
     df_ltb_temps = df_ltb_temps.loc[date_mask]
     df_ltb_temps = df_ltb_temps.set_index('Timestamp').resample(str(freq) + 'min').first()
 
@@ -99,6 +99,8 @@ def get_power_used(df_chiller_boiler_power, start_date=None, end_date=None) -> t
 
     return chiller, boiler
 
+def get_gnd_floor_area():
+    ...
 
 if __name__ == '__main__':
     # Personal testing
