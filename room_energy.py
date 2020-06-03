@@ -1,9 +1,9 @@
 import pandas as pd
 
-CEIL_HEIGHT = 3  # m
+CEIL_HEIGHT = 2.7  # m
 COEFF_AIR = 1.012  # J/(g⋅K)
 RHO = 1225  # g/m3
-U_GLASS = 2.7  # W/m²K Assuming 4mm / 16mm air / 4mm
+U_GLASS = 1.7  # W/m²K Assuming 4mm / 16mm air / 4mm 2.7
 ahu_lookup = {
         'AHU-01': 'AHU-01 Internal ZnTmp_1',
         'AHU-B1-01': 'AHU-B1-01 ZnTmp_1',
@@ -59,9 +59,7 @@ def _getTempRoom(current_room_unit, df_ltb_temps):
 
 
 def energy_to_building(df_ltb_temps, df_room_info, time_frame=["06:00", "18:00"], freq=15):
-    excluded_cols = {'OaRH','OaTmp','Timestamp', 'FCU-24'}  # Ignoring FCU-24 as it's a cooridor. Not fixed volume
-    temp_cols = set([col.split(' ')[0] for col in df_ltb_temps.columns])
-    AC_units = list(temp_cols.difference(excluded_cols))
+    AC_units = df_room_info['AHU / FCU']
     df_energy_received = pd.DataFrame(index=df_ltb_temps.index)
     for AC_unit in AC_units:
         df_room_energy = _energy_to_room(df_ltb_temps, df_room_info, AC_unit, freq)
@@ -77,12 +75,18 @@ def _energy_to_room(df_ltb_temps, df_room_info, AC_unit, freq=15):
     external_wall = float(df_room_info.loc[df_room_info['AHU / FCU'] == AC_unit]['External Wall Length'])
     room_name = str(df_room_info.loc[df_room_info['AHU / FCU'] == AC_unit]['Room Name'].iloc[0])
     zn_tmp = AC_unit + ' ZnTmp' if 'FCU' in AC_unit else ahu_lookup[AC_unit]
-    delta_temp = df_ltb_temps['OaTmp'] - df_ltb_temps[zn_tmp]
-    
+    # Assuming that that heat is gained/lost from the external facing wall of each too
+    # and equal length internal facing wall made of the same glass.
+    # Internal temp is based off FCU in a corridor to main area
+    delta_temp_external = df_ltb_temps['OaTmp'] - df_ltb_temps[zn_tmp]
+    delta_temp_internal = df_ltb_temps['FCU-24 ZnTmp'] - df_ltb_temps[zn_tmp]
+
+    watts_external = U_GLASS * (external_wall * CEIL_HEIGHT) * delta_temp_external
+    watts_internal = U_GLASS * (external_wall * CEIL_HEIGHT) * delta_temp_internal
+
     delta_t = (freq * 60)  # seconds between timesteps
     return_df = pd.DataFrame(index=df_ltb_temps.index)
-    incoming_watts = U_GLASS * (external_wall * CEIL_HEIGHT) * delta_temp
-    return_df[room_name] = incoming_watts * delta_t / 1000  # kJ transferee during this time period
+    return_df[room_name] = (watts_external + watts_internal) * delta_t / 1000  # kJ transferee during this time period
                 
     return return_df
 
@@ -101,7 +105,13 @@ if __name__ == '__main__':
     df_chiller_boiler_power = create_chiller_boiler_power_df(df_chiller_boiler_raw)
     df_room_info = create_room_info_df(room_info_raw)
 
-    df_energy_change = energyLossAllRooms(df_ltb_temps, df_room_info)
+    df_ltb_temps = df_ltb_temps.drop(
+        ['AHU-B1-02 ZnTmp_1', 'AHU-B1-02 ZnTmp_2', 'FCU-16 ZnTmp', 'FCU-15 ZnTmp'], axis=1)
+    df_room_info = df_room_info[df_room_info['AHU / FCU'] != 'AHU-B1-02']
+    df_room_info = df_room_info[df_room_info['AHU / FCU'] != 'FCU-16']
+    df_room_info = df_room_info[df_room_info['AHU / FCU'] != 'FCU-15']
+
+    #df_energy_change = energyLossAllRooms(df_ltb_temps, df_room_info)
     df_energy_in = energy_to_building(df_ltb_temps, df_room_info)
 
     print(df_energy_in)

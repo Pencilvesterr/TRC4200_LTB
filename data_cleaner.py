@@ -99,8 +99,6 @@ def get_power_used(df_chiller_boiler_power, start_date=None, end_date=None) -> t
 
     return chiller, boiler
 
-def get_gnd_floor_area():
-    ...
 
 if __name__ == '__main__':
     # Personal testing
