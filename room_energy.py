@@ -4,21 +4,24 @@ CEIL_HEIGHT = 2.7  # m
 COEFF_AIR = 1.012  # J/(g⋅K)
 RHO = 1225  # g/m3
 U_GLASS = 2.7  # W/m²K Assuming 4mm / 16mm air / 4mm
+U_CONCRETE = 1.45 #Source for this here: http://www.concrete.org.uk/fingertips-document.asp?id=593
 ahu_lookup = {
         'AHU-01': 'AHU-01 Internal ZnTmp_1',
         'AHU-B1-01': 'AHU-B1-01 ZnTmp_1',
         'AHU-B1-02': 'AHU-B1-02 ZnTmp_1'
     }
 
+## Air Leakage Params:
+AIR_PERMEABILITY = 0.8 #litre/hour
 
 # @brief: Calculates the energy from all rooms. To use individual rooms, use the energyLossRoom function
-def energyLossAllRooms(df_ltb_temps, df_room_info, time_frame=["06:00", "18:00"]):
+def energyLossAllRooms(df_ltb_temps, df_room_info, time_frame=["06:00", "18:00"], calc_type='normal'):
     # Update time period
     df_ltb_temps_sampled = df_ltb_temps.between_time(time_frame[0], time_frame[1])
-
+    arg = calc_type
     energy_loss_dict = {}
     for _, current_room_row in df_room_info.iterrows():
-        energy_loss = _energyLossRoom(current_room_row, df_ltb_temps_sampled)
+        energy_loss = _energyLossRoom(current_room_row, df_ltb_temps_sampled, arg)
         energy_loss_dict[current_room_row['Room Name']] = energy_loss
 
     df = pd.DataFrame(data=energy_loss_dict)
@@ -35,13 +38,16 @@ def energyLossAllRooms(df_ltb_temps, df_room_info, time_frame=["06:00", "18:00"]
 # @param rho density of air
 # Output is in kiloJoules.
 # Assumptions: wall height is approx. one storey which is 3.3m
-def _energyLossRoom(room_row, df_ltb_temps):
+def _energyLossRoom(room_row, df_ltb_temps, arg):
     room_area = room_row['Total Area']
     room_volume = room_area * CEIL_HEIGHT
     current_room_unit = room_row['AHU / FCU']
     temp_list = _getTempRoom(current_room_unit, df_ltb_temps)
-    return (temp_list) * COEFF_AIR * RHO * room_volume / 1000
-
+    if arg == 'airLeak':
+        leak_num = AIR_PERMEABILITY*room_volume/(3600*20)
+        return (temp_list) * COEFF_AIR * RHO * room_volume * leak_num / 1000
+    else:
+        return (temp_list) * COEFF_AIR * RHO * room_volume / 1000
 
 # @brief Calclulate the temperature difference of the room given the unit name. Outputs in percentage.
 # @param current_room_unit String input of the Cooling unit for the respective room
@@ -82,11 +88,12 @@ def _energy_to_room(df_ltb_temps, df_room_info, AC_unit, freq=15):
     delta_temp_internal = df_ltb_temps['FCU-24 ZnTmp'] - df_ltb_temps[zn_tmp]
 
     watts_external = U_GLASS * (external_wall * CEIL_HEIGHT) * delta_temp_external
-    watts_internal = U_GLASS * (external_wall * CEIL_HEIGHT) * delta_temp_internal
+    watts_internal_glass = U_GLASS * (external_wall * CEIL_HEIGHT) * delta_temp_internal
+    watts_internal_concrete = U_CONCRETE * (external_wall * CEIL_HEIGHT)* 2 * delta_temp_internal
 
     delta_t = (freq * 60)  # seconds between timesteps
     return_df = pd.DataFrame(index=df_ltb_temps.index)
-    return_df[room_name] = (watts_external + watts_internal) * delta_t / 1000  # kJ transferee during this time period
+    return_df[room_name] = (watts_external + watts_internal_glass + watts_internal_concrete) * delta_t / 1000  # kJ transferee during this time period
                 
     return return_df
 
