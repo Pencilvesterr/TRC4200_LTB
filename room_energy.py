@@ -3,7 +3,7 @@ import pandas as pd
 CEIL_HEIGHT = 2.7  # m
 COEFF_AIR = 1.012  # J/(g⋅K)
 RHO = 1225  # g/m3
-U_GLASS = 1.7  # W/m²K Assuming 4mm / 16mm air / 4mm 2.7
+U_GLASS = 2.7  # W/m²K Assuming 4mm / 16mm air / 4mm
 ahu_lookup = {
         'AHU-01': 'AHU-01 Internal ZnTmp_1',
         'AHU-B1-01': 'AHU-B1-01 ZnTmp_1',

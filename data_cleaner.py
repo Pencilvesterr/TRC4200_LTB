@@ -64,17 +64,14 @@ def create_chiller_boiler_power_df(chiller_boiler_raw):
     return df_chiller_boiler_power
 
 
-def get_power_used(df_chiller_boiler_power, start_date=None, end_date=None) -> tuple:
+def get_power_used(df_chiller_boiler_power, start_date=START_DATE, end_date=END_DATE) -> tuple:
     """Return boiled and chiller kWh for a given time period from raw data.
 
     Date inputs in 'yyyy-MM-dd' (optional hh:mm:ss)
     """
-    # Filter for only date range. If none give, use full daterange
-    if start_date and end_date:
-        date_mask = (df_chiller_boiler_power['Timestamp'] >= start_date) & (df_chiller_boiler_power['Timestamp'] < end_date)
-        df_chiller_boiler_power = df_chiller_boiler_power.loc[date_mask]
-
-    # Clear values of erroneous row
+    date_mask = (df_chiller_boiler_power['Timestamp'] >= start_date) & (df_chiller_boiler_power['Timestamp'] < end_date)
+    df_chiller_boiler_power = df_chiller_boiler_power.loc[date_mask]
+    
     df_chiller_boiler_power.loc[df_chiller_boiler_power['Timestamp'] == '28/02/2020  1:00:00',
                                 df_chiller_boiler_power.columns] = 0
 
@@ -108,10 +105,10 @@ if __name__ == '__main__':
     room_info_raw = pd.read_csv('data/Room Details.csv')
     df_chiller_boiler_raw = pd.read_csv('data/more_Data/chillers boilers thermal Feb 23032020.csv')
 
-    #df_chiller_boiler_power = create_chiller_boiler_power_df(df_chiller_boiler_raw)
+    df_chiller_boiler_power = create_chiller_boiler_power_df(df_chiller_boiler_raw)
     # df_rooms_info = create_room_info_df(room_info_raw)
-    df_ltb_temps = create_temp_df(df_fcu_sth_raw, df_fcu_nth_raw, df_ahu_raw)
+    #df_ltb_temps = create_temp_df(df_fcu_sth_raw, df_fcu_nth_raw, df_ahu_raw)
 
-
+    print(get_power_used(df_chiller_boiler_power, start_date=START_DATE, end_date=END_DATE).sum())
 
 
