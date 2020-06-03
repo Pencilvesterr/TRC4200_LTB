@@ -4,7 +4,7 @@ START_DATE = '2020-02-02 01:10:0'  # Nth data set starts Feb 2nd 1:10:00, so lim
 END_DATE = '2020-02-29 23:59:59'
 
 
-def create_temp_df(fcu_sth_raw, fcu_nth_raw, ahu_raw):
+def create_temp_df(fcu_sth_raw, fcu_nth_raw, ahu_raw, freq=15):
     """ Create a cleaned data frame for all raw temperature related data."""
     fcu_sth_raw['Timestamp'] = pd.to_datetime(fcu_sth_raw['Timestamp'], dayfirst=True)
     fcu_nth_raw['Timestamp'] = pd.to_datetime(fcu_nth_raw['Timestamp'], dayfirst=True)
@@ -29,6 +29,7 @@ def create_temp_df(fcu_sth_raw, fcu_nth_raw, ahu_raw):
     # Limit range
     date_mask = (df_ltb_temps['Timestamp'] >= START_DATE) & (df_ltb_temps['Timestamp'] <= END_DATE)
     df_ltb_temps = df_ltb_temps.loc[date_mask]
+    df_ltb_temps = df_ltb_temps.set_index('Timestamp').resample(str(freq) + 'min').first()
 
     return df_ltb_temps
 
@@ -105,7 +106,7 @@ if __name__ == '__main__':
 
     #df_chiller_boiler_power = create_chiller_boiler_power_df(df_chiller_boiler_raw)
     # df_rooms_info = create_room_info_df(room_info_raw)
-    #df_ltb_temps = create_temp_df(df_fcu_sth_raw, df_fcu_nth_raw, df_ahu_raw)
+    df_ltb_temps = create_temp_df(df_fcu_sth_raw, df_fcu_nth_raw, df_ahu_raw)
 
 
 

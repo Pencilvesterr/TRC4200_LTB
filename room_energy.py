@@ -1,9 +1,9 @@
 import pandas as pd
 
-CEIL_HEIGHT = 3.3  # m
+CEIL_HEIGHT = 3  # m
 COEFF_AIR = 1.012  # J/(g⋅K)
 RHO = 1225  # g/m3
-U_GLASS = 2.7  # W/m²K
+U_GLASS = 2.7  # W/m²K Assuming 4mm / 16mm air / 4mm
 ahu_lookup = {
         'AHU-01': 'AHU-01 Internal ZnTmp_1',
         'AHU-B1-01': 'AHU-B1-01 ZnTmp_1',
@@ -12,10 +12,9 @@ ahu_lookup = {
 
 
 # @brief: Calculates the energy from all rooms. To use individual rooms, use the energyLossRoom function
-def energyLossAllRooms(df_ltb_temps, df_room_info, freq=15, time_frame=["06:00", "18:00"]):
+def energyLossAllRooms(df_ltb_temps, df_room_info, time_frame=["06:00", "18:00"]):
     # Update time period
-    df_ltb_temps_sampled = df_ltb_temps.resample(str(freq)+'min', on='Timestamp').first()
-    df_ltb_temps_sampled = df_ltb_temps_sampled.between_time(time_frame[0], time_frame[1])
+    df_ltb_temps_sampled = df_ltb_temps.between_time(time_frame[0], time_frame[1])
 
     energy_loss_dict = {}
     for _, current_room_row in df_room_info.iterrows():
@@ -63,11 +62,10 @@ def energy_to_building(df_ltb_temps, df_room_info, time_frame=["06:00", "18:00"]
     excluded_cols = {'OaRH','OaTmp','Timestamp', 'FCU-24'}  # Ignoring FCU-24 as it's a cooridor. Not fixed volume
     temp_cols = set([col.split(' ')[0] for col in df_ltb_temps.columns])
     AC_units = list(temp_cols.difference(excluded_cols))
-    df_ltb_temps_sampled = df_ltb_temps.set_index('Timestamp').resample(str(freq)+'min').first().dropna()
-    df_energy_received = pd.DataFrame(index=df_ltb_temps_sampled.index)
+    df_energy_received = pd.DataFrame(index=df_ltb_temps.index)
     for AC_unit in AC_units:
-        df_room = _energy_to_room(df_ltb_temps_sampled, df_room_info, AC_unit, freq)
-        df_energy_received = df_energy_received.join(df_room)
+        df_room_energy = _energy_to_room(df_ltb_temps, df_room_info, AC_unit, freq)
+        df_energy_received = df_energy_received.join(df_room_energy)
     
     df = df_energy_received.between_time(time_frame[0], time_frame[1])
     df_energy_received = df.reindex(sorted(df.columns), axis=1)  # Sort columns alphabetically
@@ -78,17 +76,13 @@ def energy_to_building(df_ltb_temps, df_room_info, time_frame=["06:00", "18:00"]
 def _energy_to_room(df_ltb_temps, df_room_info, AC_unit, freq=15):
     external_wall = float(df_room_info.loc[df_room_info['AHU / FCU'] == AC_unit]['External Wall Length'])
     room_name = str(df_room_info.loc[df_room_info['AHU / FCU'] == AC_unit]['Room Name'].iloc[0])
-    
-    if 'FCU' in AC_unit:
-        delta_temp = df_ltb_temps[AC_unit + ' ZnTmp'] -  df_ltb_temps['OaTmp']
-    else:
-        zn_tmp = ahu_lookup[AC_unit]
-        delta_temp = df_ltb_temps[zn_tmp] -  df_ltb_temps['OaTmp']
+    zn_tmp = AC_unit + ' ZnTmp' if 'FCU' in AC_unit else ahu_lookup[AC_unit]
+    delta_temp = df_ltb_temps['OaTmp'] - df_ltb_temps[zn_tmp]
     
     delta_t = (freq * 60)  # seconds between timesteps
     return_df = pd.DataFrame(index=df_ltb_temps.index)
     incoming_watts = U_GLASS * (external_wall * CEIL_HEIGHT) * delta_temp
-    return_df[room_name] = incoming_watts * delta_t / 1000 # kJ transfered during this time period
+    return_df[room_name] = incoming_watts * delta_t / 1000  # kJ transferee during this time period
                 
     return return_df
 
@@ -110,4 +104,5 @@ if __name__ == '__main__':
     df_energy_change = energyLossAllRooms(df_ltb_temps, df_room_info)
     df_energy_in = energy_to_building(df_ltb_temps, df_room_info)
 
-    print(df_energy_change)
+    print(df_energy_in)
+
