@@ -32,7 +32,6 @@ def create_temp_df(fcu_sth_raw, fcu_nth_raw, ahu_raw, start_date=START_DATE, end
 
     return df_ltb_temps
 
-
 def create_room_info_df(room_info_raw):
     """Clean room info data consistently."""
     # Cleaned the file instead, makes this redundant
@@ -75,9 +74,6 @@ def get_power_used(df_chiller_boiler_power, time_frame=["06:00", "18:00"]) -> tu
     for column in df_chiller_boiler_power_sampled:
         if column.startswith('LTB CH'):
             chiller += df_chiller_boiler_power_sampled[column].sum()
-            print(column)
-            print(chiller)
-            break
         elif column.startswith('LTB  BLR'):
             boiler += df_chiller_boiler_power_sampled[column].sum()
  

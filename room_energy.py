@@ -89,11 +89,12 @@ def _energy_to_room(df_ltb_temps, df_room_info, AC_unit, freq=15):
 
     watts_external = U_GLASS * (external_wall * CEIL_HEIGHT) * delta_temp_external
     watts_internal_glass = U_GLASS * (external_wall * CEIL_HEIGHT) * delta_temp_internal
-    watts_internal_concrete = U_CONCRETE * (external_wall * CEIL_HEIGHT)* 2 * delta_temp_internal
-
+    Q_cond_glass = U_GLASS * (external_wall * CEIL_HEIGHT) * 7.69 
+    Q_solar_glass = (external_wall * CEIL_HEIGHT) * 0.7 * 34.67
+    
     delta_t = (freq * 60)  # seconds between timesteps
     return_df = pd.DataFrame(index=df_ltb_temps.index)
-    return_df[room_name] = (watts_external + watts_internal_glass + watts_internal_concrete) * delta_t / 1000  # kJ transferee during this time period
+    return_df[room_name] = (watts_external + watts_internal_glass + Q_cond_glass + Q_solar_glass) * delta_t / 1000  # kJ transferee during this time period
                 
     return return_df
 
