@@ -90,6 +90,9 @@ def _energy_to_room(df_ltb_temps, df_room_info, AC_unit, freq=15):
     watts_external = U_GLASS * (external_wall * CEIL_HEIGHT) * delta_temp_external
     watts_internal_glass = U_GLASS * (external_wall * CEIL_HEIGHT) * delta_temp_internal
     watts_internal_concrete = U_CONCRETE * (external_wall * CEIL_HEIGHT)* 2 * delta_temp_internal
+    
+    
+    # TODO. Why am using concrete!?
 
     delta_t = (freq * 60)  # seconds between timesteps
     return_df = pd.DataFrame(index=df_ltb_temps.index)

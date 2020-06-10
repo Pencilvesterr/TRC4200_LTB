@@ -3,7 +3,6 @@ import pandas as pd
 START_DATE = '2020-02-02 01:10:0'  # Nth data set starts Feb 2nd 1:10:00, so limits range of all datasets
 END_DATE = '2020-02-29 23:59:59'
 
-
 def create_temp_df(fcu_sth_raw, fcu_nth_raw, ahu_raw, start_date=START_DATE, end_date=END_DATE, freq=15):
     """ Create a cleaned data frame for all raw temperature related data."""
     fcu_sth_raw['Timestamp'] = pd.to_datetime(fcu_sth_raw['Timestamp'], dayfirst=True)
@@ -64,28 +63,31 @@ def create_chiller_boiler_power_df(chiller_boiler_raw):
     return df_chiller_boiler_power
 
 
-def get_power_used(df_chiller_boiler_power, start_date=START_DATE, end_date=END_DATE) -> tuple:
+def get_power_used(df_chiller_boiler_power, time_frame=["06:00", "18:00"]) -> tuple:
     """Return boiled and chiller kWh for a given time period from raw data.
 
     Date inputs in 'yyyy-MM-dd' (optional hh:mm:ss)
     """
-    date_mask = (df_chiller_boiler_power['Timestamp'] >= start_date) & (df_chiller_boiler_power['Timestamp'] < end_date)
-    df_chiller_boiler_power = df_chiller_boiler_power.loc[date_mask]
-    
+    # Remove row with ridiculouly high values from data    
     df_chiller_boiler_power.loc[df_chiller_boiler_power['Timestamp'] == '28/02/2020  1:00:00',
                                 df_chiller_boiler_power.columns] = 0
+    
+    df_chiller_boiler_power_sampled = df_chiller_boiler_power.resample('H', on='Timestamp').first()
+    if len(time_frame) == 2:
+        df_chiller_boiler_power_sampled = df_chiller_boiler_power.between_time(time_frame[0], time_frame[1])
+        
+    
 
-    totals = {}  # Leaving this here incase raw values need to be inspected
     boiler = chiller = 0
-    for column in df_chiller_boiler_power:
-        if column != 'Timestamp':
-            column_sum = sum(df_chiller_boiler_power[column])
-            totals[column] = column_sum
-            if column.startswith('LTB CH'):
-                chiller += column_sum
-            elif column.startswith('LTB  BLR'):
-                boiler += column_sum
-
+    for column in df_chiller_boiler_power_sampled:
+        if column.startswith('LTB CH'):
+            chiller += df_chiller_boiler_power_sampled[column].sum()
+            print(column)
+            print(chiller)
+            break
+        elif column.startswith('LTB  BLR'):
+            boiler += df_chiller_boiler_power_sampled[column].sum()
+ 
     # kWh to kJ
     boiler = boiler * 3600
     chiller = chiller * 3600
